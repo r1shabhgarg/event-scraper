@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Events Aggregation Engine | Live Test</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
     <div class="blob-gradient"></div>
@@ -14,7 +14,12 @@
             <h1>Student Events Engine</h1>
             <p class="subtitle">Discover Hackathons, Competitions, and Workshops dynamically aggregated from across the web.</p>
             
-            <div class="filter-controls">
+            <div class="search-container">
+                <input type="text" id="ai-search-input" placeholder="Ask AI: e.g. 'Hackathons in Bangalore'..." />
+                <button id="ai-search-btn">✨ AI Search</button>
+            </div>
+            
+            <div class="filter-controls" id="filter-controls">
                 <button class="filter-btn active" data-filter="competition">Competitions</button>
                 <button class="filter-btn" data-filter="hackathon">Hackathons</button>
                 <button class="filter-btn" data-filter="workshop">Workshops</button>

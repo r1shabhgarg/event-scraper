@@ -4,6 +4,8 @@ const eventsContainer = document.getElementById("events-container");
 const loader = document.getElementById("loader");
 const emptyState = document.getElementById("empty-state");
 const filterBtns = document.querySelectorAll(".filter-btn");
+const aiSearchInput = document.getElementById("ai-search-input");
+const aiSearchBtn = document.getElementById("ai-search-btn");
 
 let allEventsCache = [];
 
@@ -171,3 +173,90 @@ filterBtns.forEach(btn => {
 document.addEventListener("DOMContentLoaded", () => {
     fetchEvents();
 });
+
+// AI Search Logic
+aiSearchBtn.addEventListener("click", () => {
+    const query = aiSearchInput.value.trim();
+    if (!query) return;
+    fetchAISearch(query);
+});
+
+aiSearchInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        const query = aiSearchInput.value.trim();
+        if (query) fetchAISearch(query);
+    }
+});
+
+async function fetchAISearch(query) {
+    showLoader();
+    filterBtns.forEach(b => b.classList.remove("active"));
+    
+    try {
+        const response = await fetch(`${API_BASE}/search`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: query })
+        });
+        const data = await response.json();
+        
+        hideLoader();
+        
+        if (!data.results || data.results.length === 0) {
+            showEmptyState();
+            emptyState.innerHTML = "<h2>No AI results found.</h2><p>Try rephrasing your search or ensure API keys are configured.</p>";
+        } else {
+            renderAIResults(data.query, data.results);
+        }
+    } catch (error) {
+        console.error("Error fetching AI search:", error);
+        hideLoader();
+        showEmptyState();
+        emptyState.innerHTML = "<h2>Error connecting to AI Search</h2><p>Make sure the backend is running.</p>";
+    }
+}
+
+function renderAIResults(queryStr, results) {
+    eventsContainer.innerHTML = "";
+    eventsContainer.classList.remove("hidden");
+    emptyState.classList.add("hidden");
+
+    const section = document.createElement("section");
+    section.className = "event-section";
+    
+    const title = document.createElement("h2");
+    title.className = "section-title";
+    title.innerHTML = `✨ AI Results for <span style="color:#4ECDC4;">"${queryStr}"</span>`;
+    
+    const grid = document.createElement("div");
+    grid.className = "events-grid";
+
+    results.forEach(event => {
+        const card = document.createElement("div");
+        card.className = "event-card";
+        card.style.border = "1px solid rgba(78, 205, 196, 0.3)";
+        
+        card.innerHTML = `
+            <div class="card-header">
+                <span class="platform-badge" style="background: rgba(255,107,107,0.2); color:#FF6B6B;">${event.source}</span>
+                <span class="event-type">AI Aggregated</span>
+            </div>
+            <h2 class="event-title">${event.title}</h2>
+            <div class="event-meta">
+                <div class="meta-item">📅 ${event.date || "TBA"}</div>
+                <div class="meta-item">📍 ${event.location || "Unknown"}</div>
+            </div>
+            <div class="ai-summary">
+                <div class="desc-text">${event.description}</div>
+            </div>
+            <div class="card-footer">
+                <a href="${event.link}" target="_blank" class="view-btn" style="width: 100%;">View Details</a>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+
+    section.appendChild(title);
+    section.appendChild(grid);
+    eventsContainer.appendChild(section);
+}

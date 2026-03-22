@@ -26,3 +26,18 @@ class EventResponse(EventBase):
     created_at: datetime
     
     model_config = ConfigDict(from_attributes=True)
+
+class SearchQuery(BaseModel):
+    query: str
+
+class SearchItem(BaseModel):
+    title: str
+    description: Optional[str] = None
+    location: Optional[str] = None
+    date: Optional[str] = None
+    link: str
+    source: str
+
+class SearchResponse(BaseModel):
+    query: str
+    results: List[SearchItem]

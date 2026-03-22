@@ -32,3 +32,16 @@ async def get_ending_soon(
     skip: int = 0, limit: int = 10, db: AsyncSession = Depends(get_db)
 ):
     return await crud.get_events(db=db, skip=skip, limit=limit, ending_soon=True)
+
+from services.ai_search import aggregate_search
+
+@router.post("/search", response_model=schemas.SearchResponse)
+async def ai_search_endpoint(
+    request: schemas.SearchQuery,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Advanced AI Search Agent Endpoint mapping DDG, Serper, and Internal APIs via an LLM.
+    """
+    return await aggregate_search(db=db, query=request.query)
+

@@ -10,3 +10,6 @@ pydantic
 pydantic-settings
 python-dotenv
 playwright
+duckduckgo-search
+google-generativeai
+httpx
