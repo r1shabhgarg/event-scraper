@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000/events";
+const API_BASE = "https://event-scraper-nine.vercel.app/events";
 
 const eventsContainer = document.getElementById("events-container");
 const loader = document.getElementById("loader");
