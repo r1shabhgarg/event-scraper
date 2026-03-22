@@ -45,3 +45,79 @@ async def ai_search_endpoint(
     """
     return await aggregate_search(db=db, query=request.query)
 
+from sqlalchemy.future import select
+from sqlalchemy import or_
+from db.models import Event
+
+@router.get("/export")
+@router.options("/export")
+async def export_events(
+    q: Optional[str] = Query(None, description="Search/filter string"),
+    category: Optional[str] = Query(None, description="Event category"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Export events in a customized JSON shape for external integrations.
+    Supports filtering by generic search query 'q' and 'category'.
+    """
+    query = select(Event)
+    
+    if q:
+        search_term = f"%{q.lower()}%"
+        # Case-insensitive match against title and description (and summary just in case)
+        query = query.filter(
+            or_(
+                Event.title.ilike(search_term),
+                Event.description.ilike(search_term),
+                Event.summary.ilike(search_term)
+            )
+        )
+        
+    if category:
+        # Match categories gracefully handling plural forms like 'hackathons' -> 'hackathon'
+        cat_search = category.lower()
+        if cat_search.endswith('s'):
+            cat_search = cat_search[:-1]
+        cat_search = f"%{cat_search}%"
+        query = query.filter(Event.event_type.ilike(cat_search))
+        
+    result = await db.execute(query.order_by(Event.created_at.desc()))
+    events = result.scalars().all()
+    
+    events_list = []
+    for e in events:
+        def format_date(dt):
+            if not dt: return "TBA"
+            return dt.strftime("%b %d, %Y")
+        
+        start = format_date(e.event_date)
+        end = format_date(e.deadline)
+        
+        if start == "TBA" and end == "TBA":
+            date_str = "TBA"
+        elif start == end:
+            date_str = start
+        elif start == "TBA":
+            date_str = f"TBA - {end}"
+        elif end == "TBA":
+            date_str = f"{start} - TBA"
+        else:
+            date_str = f"{start} - {end}"
+            
+        desc = e.summary if e.summary else e.description
+        if not desc:
+            desc = "No description available."
+            
+        events_list.append({
+            "title": e.title,
+            "date": date_str,
+            "location": e.location or "Online",
+            "description": desc,
+            "url": e.link,
+            "source": e.platform
+        })
+        
+    # The JSON structure returned exactly matches the user request: {"events": [...]}
+    # FastAPI's CORSMiddleware handles OPTIONS and proper headers globally.
+    return {"events": events_list}
+
